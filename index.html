@@ -4,22 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generator Name Tag Karyawan</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- html2pdf.js CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
-    <!-- Google Fonts alternatif Blueberry Sans -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&display=swap" rel="stylesheet">
+    <!-- MENGGUNAKAN TAILWIND V3 (Ringan, Stabil & Lolos Brave Shields) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Library PDF via jsDelivr CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
     
     <style>
-        .font-blueberry {
-            font-family: 'Fredoka', 'Segoe UI', Roboto, sans-serif;
-            font-weight: 600;
+        /* MENGHUBUNGKAN LANGSUNG KE FILE FONT BlueberrySans-Medium.otf YANG ANDA LAMPIRKAN */
+        @font-face {
+            font-family: 'Blueberry Sans Custom';
+            src: url('BlueberrySans-Medium.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
         }
-        /* Dimensi area pratinjau sesuai standar store (Skala layar) */
+
+        .font-blueberry {
+            font-family: 'Blueberry Sans Custom', 'Arial Black', sans-serif;
+            font-weight: normal; /* Font bawaannya sudah tebal/medium */
+        }
+
+        /* Ukuran fisik name tag presisi (skala layar preview) */
         .nametag-preview {
             width: 4.8cm;
             height: 1.6cm;
@@ -32,7 +39,7 @@
             overflow: hidden;
             text-transform: uppercase;
         }
-        /* Layout cetak PDF A4 */
+        /* Layout lembar cetak A4 */
         .pdf-page {
             width: 210mm; 
             padding: 15mm;
@@ -41,11 +48,11 @@
             gap: 5mm;
             background: white;
         }
-        /* Format spesifik name tag untuk cetak */
+        /* Spesifikasi cetak sesuai instruksi store */
         .nametag-print {
             width: 4.8cm;
             height: 1.6cm;
-            border: 1px dashed #94a3b8; /* Garis bantu potong */
+            border: 1px dashed #94a3b8; /* Garis potong */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -65,11 +72,11 @@
         <!-- Header -->
         <header class="mb-8 text-center border-b border-slate-200 pb-6">
             <h1 class="text-3xl font-bold text-slate-900 mb-2">🏷️ Generator Name Tag Karyawan</h1>
-            <p class="text-slate-600">Sesuai Standar Cetak Store (4.8 cm x 1.6 cm, Font: Blueberry Sans 18pt)</p>
+            <p class="text-slate-600 text-sm md:text-base">Sesuai Standar Cetak Store (4.8 cm x 1.6 cm, Font: Blueberry Sans 18pt)</p>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Sisi Kiri: Form Input -->
+            <!-- Input Form -->
             <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-fit">
                 <h2 class="text-lg font-semibold mb-4 text-slate-900">Input Data</h2>
                 
@@ -79,22 +86,23 @@
                         id="namesInput" 
                         rows="8" 
                         class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        placeholder="Masukkan nama panggilan&#10;Satu nama per baris...&#10;&#10;Contoh:&#10;BUDI&#10;SITI"
+                        placeholder="Masukkan nama panggilan...&#10;Satu nama per baris."
+                        oninput="updateNameTags()"
                     >BUDI
 SITI
 ANDI</textarea>
-                    <p class="mt-2 text-xs text-slate-500">Otomatis memperbarui tampilan pratinjau saat Anda mengetik.</p>
+                    <p class="mt-2 text-xs text-slate-500">Otomatis memperbarui tampilan tanpa perlu klik refresh.</p>
                 </div>
 
                 <div class="space-y-2">
                     <button 
-                        id="btnGenerate"
+                        onclick="updateNameTags()"
                         class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-150 shadow-sm text-sm"
                     >
                         🔄 Refresh Preview
                     </button>
                     <button 
-                        id="btnDownload"
+                        onclick="downloadPDF()"
                         class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-150 shadow-sm text-sm"
                     >
                         📥 Download PDF
@@ -102,9 +110,9 @@ ANDI</textarea>
                 </div>
             </div>
 
-            <!-- Sisi Kanan: Pratinjau & Aturan Store -->
+            <!-- Preview & Ketentuan -->
             <div class="md:col-span-2 space-y-6">
-                <!-- Aturan Standar Alert -->
+                <!-- Banner Ketentuan -->
                 <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
                     <h3 class="text-sm font-semibold text-amber-900 mb-1">Ketentuan Standar Store:</h3>
                     <ul class="text-xs text-amber-800 space-y-1 list-disc list-inside">
@@ -114,104 +122,109 @@ ANDI</textarea>
                     </ul>
                 </div>
 
-                <!-- Preview Box -->
+                <!-- Live Preview Area -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                     <h2 class="text-lg font-semibold mb-4 text-slate-900">Live Preview (Skala Layar)</h2>
                     <div id="previewContainer" class="flex flex-wrap gap-4 p-4 bg-slate-100 rounded-lg min-h-[100px] justify-center md:justify-start">
-                        <!-- Komponen Name Tag ter-generate otomatis di sini -->
+                        <!-- Name tag ter-render otomatis di sini -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Hidden Container Aman untuk Render Engine PDF -->
-    <div id="printWrapper" style="position: absolute; left: -9999px; top: -9999px;">
+    <!-- Hidden Container khusus untuk Render Mesin PDF -->
+    <div id="printWrapper" style="position: absolute; left: -9999px; top: -9999px; overflow: hidden;">
         <div id="printTarget" class="pdf-page font-blueberry"></div>
     </div>
 
+    <!-- JAVASCRIPT GLOBAL -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const namesInput = document.getElementById('namesInput');
-            const btnGenerate = document.getElementById('btnGenerate');
-            const btnDownload = document.getElementById('btnDownload');
-            const previewContainer = document.getElementById('previewContainer');
-            const printTarget = document.getElementById('printTarget');
+        function updateNameTags() {
+            var namesInput = document.getElementById('namesInput');
+            var previewContainer = document.getElementById('previewContainer');
+            var printTarget = document.getElementById('printTarget');
 
-            function updateNameTags() {
-                previewContainer.innerHTML = '';
-                printTarget.innerHTML = '';
+            if (!namesInput || !previewContainer || !printTarget) return;
 
-                if (!namesInput.value.trim()) {
-                    previewContainer.innerHTML = '<p class="text-slate-400 text-sm m-auto italic">Belum ada nama yang dimasukkan.</p>';
-                    return;
-                }
+            previewContainer.innerHTML = '';
+            printTarget.innerHTML = '';
 
-                const lines = namesInput.value.split('
-');
-                let hasValidNames = false;
+            var textValue = namesInput.value || '';
+            if (!textValue.trim()) {
+                previewContainer.innerHTML = '<p class="text-slate-400 text-sm m-auto italic">Belum ada nama yang dimasukkan.</p>';
+                return;
+            }
 
-                lines.forEach((line) => {
-                    const cleanName = line.trim().toUpperCase();
-                    if (cleanName.length > 0) {
-                        hasValidNames = true;
+            var lines = textValue.split('\n');
+            var hasValidNames = false;
 
-                        // 1. Elemen Live Preview
-                        const previewCard = document.createElement('div');
-                        previewCard.className = 'nametag-preview font-blueberry text-slate-900 shadow-sm';
-                        
-                        // Validasi panjang nama panggilan (Warning merah jika > 10 karakter)
-                        if (cleanName.length > 10) {
-                            previewCard.classList.add('border-red-500', 'bg-red-50');
-                        }
-                        
-                        previewCard.style.fontSize = '18pt';
-                        previewCard.textContent = cleanName;
-                        previewContainer.appendChild(previewCard);
+            for (var i = 0; i < lines.length; i++) {
+                var cleanName = lines[i].trim().toUpperCase();
+                if (cleanName.length > 0) {
+                    hasValidNames = true;
 
-                        // 2. Elemen Cetak PDF
-                        const printCard = document.createElement('div');
-                        printCard.className = 'nametag-print';
-                        printCard.textContent = cleanName;
-                        printTarget.appendChild(printCard);
+                    // 1. Render Kartu untuk Live Preview di Layar
+                    var previewCard = document.createElement('div');
+                    previewCard.className = 'nametag-preview font-blueberry text-slate-900 shadow-sm';
+                    
+                    if (cleanName.length > 10) {
+                        previewCard.className += ' border-red-500 bg-red-50';
                     }
+                    
+                    previewCard.style.fontSize = '18pt';
+                    previewCard.textContent = cleanName;
+                    previewContainer.appendChild(previewCard);
+
+                    // 2. Render Kartu khusus untuk Output Dokumen PDF
+                    var printCard = document.createElement('div');
+                    printCard.className = 'nametag-print font-blueberry';
+                    printCard.textContent = cleanName;
+                    printTarget.appendChild(printCard);
+                }
+            }
+
+            if (!hasValidNames) {
+                previewContainer.innerHTML = '<p class="text-slate-400 text-sm m-auto italic">Belum ada nama yang dimasukkan.</p>';
+            }
+        }
+
+        function downloadPDF() {
+            var namesInput = document.getElementById('namesInput');
+            if (!namesInput || !namesInput.value.trim()) {
+                alert('Silakan masukkan minimal satu nama terlebih dahulu.');
+                return;
+            }
+
+            if (typeof html2pdf === 'undefined') {
+                alert('Komponen pembuat PDF sedang dimuat. Mohon tunggu sebentar.');
+                return;
+            }
+
+            var printTarget = document.getElementById('printTarget');
+            var opt = {
+                margin:       [10, 10, 10, 10],
+                filename:     'Name_Tags_Karyawan.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 3, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(printTarget).save().catch(function(err) {
+                alert('Terjadi kesalahan saat mengunduh PDF: ' + err);
+            });
+        }
+
+        // Jalankan fungsi otomatis saat halaman selesai dimuat dan font siap
+        window.onload = function() {
+            if (document.fonts) {
+                document.fonts.ready.then(function() {
+                    updateNameTags();
                 });
-
-                if (!hasValidNames) {
-                    previewContainer.innerHTML = '<p class="text-slate-400 text-sm m-auto italic">Belum ada nama yang dimasukkan.</p>';
-                }
+            } else {
+                updateNameTags();
             }
-
-            function downloadPDF() {
-                const lines = namesInput.value.split('
-').filter(l => l.trim().length > 0);
-                if (lines.length === 0) {
-                    alert('Silakan masukkan minimal satu nama terlebih dahulu.');
-                    return;
-                }
-
-                if (typeof html2pdf === 'undefined') {
-                    alert('Sistem sedang memuat komponen PDF, mohon tunggu beberapa detik lalu coba lagi.');
-                    return;
-                }
-
-                const opt = {
-                    margin:       [10, 10, 10, 10],
-                    filename:     'Name_Tags_Karyawan.pdf',
-                    image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 3, useCORS: true },
-                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                };
-
-                html2pdf().set(opt).from(printTarget).save();
-            }
-
-            btnGenerate.addEventListener('click', updateNameTags);
-            btnDownload.addEventListener('click', downloadPDF);
-            namesInput.addEventListener('input', updateNameTags);
-
-            updateNameTags();
-        });
+        };
     </script>
 </body>
 </html>
