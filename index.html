@@ -61,7 +61,7 @@
         .nametag-print {
             width: 48mm;
             height: 16mm;
-            border: 1px dashed #cbd5e1; /* Garis bantu potong tipis */
+            border: 1px dashed #cbd5e1;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -73,9 +73,10 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans flex flex-col">
 
-    <div class="max-w-4xl mx-auto px-4 py-8">
+    <!-- Wrapper Konten Utama -->
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8">
         <!-- Header -->
         <header class="mb-8 text-center border-b border-slate-200 pb-6">
             <h1 class="text-3xl font-bold text-slate-900 mb-2">🏷️ Generator Name Tag Karyawan</h1>
@@ -110,7 +111,7 @@ CHRISTOPHER</textarea>
 
                 <div class="space-y-2">
                     <button 
-                        onclick="updateNameTags()"
+                        onclick="recordGenerate()"
                         class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-150 shadow-sm text-sm"
                     >
                         🔄 Refresh Preview
@@ -145,22 +146,86 @@ CHRISTOPHER</textarea>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- WADAH PENGOLAHAN RENDER ENGINE PDF (Tersembunyi total tapi terbaca sempurna oleh html2pdf) -->
+    <!-- Analitik Footer (Kunjungan Global & Aktivitas Harian Personal) -->
+    <footer class="mt-auto border-t border-slate-200 py-6 text-center text-slate-500 text-sm">
+        <div class="flex flex-col md:flex-row items-center justify-center gap-4 bg-white max-w-2xl mx-auto px-6 py-4 rounded-xl shadow-sm border border-slate-100">
+            
+            <!-- Global Visit Counter (Via 3rd Party API) -->
+            <div class="flex flex-col items-center min-w-[120px]">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Total Kunjungan</span>
+                <img src="https://visitor-badge.laobi.icu/badge?page_id=nametag_generator_store" alt="Visitor Badge" class="h-5">
+            </div>
+
+            <div class="hidden md:block w-px h-10 bg-slate-200"></div>
+            <div class="md:hidden h-px w-full bg-slate-100"></div>
+
+            <!-- Generate Counter (Daily Local Storage) -->
+            <div class="flex flex-col items-center min-w-[120px]">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Generate (Hari Ini)</span>
+                <span id="statGenerate" class="font-bold text-blue-600 text-xl font-sans">0</span>
+            </div>
+
+            <div class="hidden md:block w-px h-10 bg-slate-200"></div>
+            <div class="md:hidden h-px w-full bg-slate-100"></div>
+
+            <!-- Download Counter (Daily Local Storage) -->
+            <div class="flex flex-col items-center min-w-[120px]">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Download (Hari Ini)</span>
+                <span id="statDownload" class="font-bold text-emerald-600 text-xl font-sans">0</span>
+            </div>
+
+        </div>
+        <p class="mt-6 text-xs text-slate-400">© 2026 Generator Name Tag Karyawan</p>
+    </footer>
+
+    <!-- WADAH PENGOLAHAN RENDER ENGINE PDF -->
     <div style="position: absolute; top: -9999px; left: -9999px; width: 210mm;">
         <div id="printTarget"></div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
+    <!-- JAVASCRIPT LOGIC & ANALYTICS -->
     <script>
+        // --- 1. LOCAL ANALYTICS LOGIC ---
+        function initAnalytics() {
+            var today = new Date().toLocaleDateString('id-ID');
+            var storedDate = localStorage.getItem('ntg_date');
+            
+            // Reset counter jika hari sudah berganti
+            if (storedDate !== today) {
+                localStorage.setItem('ntg_date', today);
+                localStorage.setItem('ntg_generate', 0);
+                localStorage.setItem('ntg_download', 0);
+            }
+            updateAnalyticsUI();
+        }
+
+        function updateAnalyticsUI() {
+            document.getElementById('statGenerate').innerText = localStorage.getItem('ntg_generate') || 0;
+            document.getElementById('statDownload').innerText = localStorage.getItem('ntg_download') || 0;
+        }
+
+        function recordGenerate() {
+            var count = parseInt(localStorage.getItem('ntg_generate') || 0);
+            localStorage.setItem('ntg_generate', count + 1);
+            updateAnalyticsUI();
+            updateNameTags(); // Panggil fungsi preview
+        }
+
+        function recordDownload() {
+            var count = parseInt(localStorage.getItem('ntg_download') || 0);
+            localStorage.setItem('ntg_download', count + 1);
+            updateAnalyticsUI();
+        }
+
+        // --- 2. CORE PDF GENERATOR LOGIC ---
         function getSmartFontSize(nameLength) {
-            // Skala dinamis otomatis agar nama panjang tidak meluap keluar batas kartu 4.8cm
             if (nameLength <= 7) return '18pt';
             if (nameLength === 8) return '16pt';
             if (nameLength === 9) return '14pt';
             if (nameLength === 10) return '12pt';
-            return '10.5pt'; // Untuk nama yang sangat panjang (>10 karakter)
+            return '10.5pt';
         }
 
         function updateNameTags() {
@@ -170,7 +235,6 @@ CHRISTOPHER</textarea>
 
             if (!namesInput || !previewContainer || !printTarget) return;
 
-            // Reset kontainer pratinjau dan cetak
             previewContainer.innerHTML = '';
             printTarget.innerHTML = '';
 
@@ -183,7 +247,6 @@ CHRISTOPHER</textarea>
             var lines = textValue.split('\n');
             var validNames = [];
 
-            // Kumpulkan nama yang valid dan ubah jadi kapital
             for (var i = 0; i < lines.length; i++) {
                 var cleanName = lines[i].trim().toUpperCase();
                 if (cleanName.length > 0) {
@@ -196,17 +259,15 @@ CHRISTOPHER</textarea>
                 return;
             }
 
-            // 1. GENERATE PREVIEW DI LAYAR
+            // A. PREVIEW LAYAR
             for (var j = 0; j < validNames.length; j++) {
                 var currentName = validNames[j];
                 var previewCard = document.createElement('div');
                 previewCard.className = 'nametag-preview font-blueberry text-slate-900 shadow-sm';
                 
-                var calculatedSize = getSmartFontSize(currentName.length);
-                previewCard.style.fontSize = calculatedSize;
+                previewCard.style.fontSize = getSmartFontSize(currentName.length);
                 previewCard.textContent = currentName;
                 
-                // Beri penanda merah di preview layar jika nama sangat panjang (sebagai info saja)
                 if (currentName.length > 10) {
                     previewCard.className += ' border-amber-500 bg-amber-50';
                 }
@@ -214,8 +275,7 @@ CHRISTOPHER</textarea>
                 previewContainer.appendChild(previewCard);
             }
 
-            // 2. STRUKTURISASI HALAMAN A4 MANUAL (Anti Menggantung / Anti Terpotong)
-            // Maksimal 60 kartu per lembar kertas A4 (4 kolom x 15 baris)
+            // B. PDF SHEET A4 (Maks 60 kartu per halaman)
             var cardsPerPage = 60;
             var totalPages = Math.ceil(validNames.length / cardsPerPage);
 
@@ -234,7 +294,6 @@ CHRISTOPHER</textarea>
                     printCard.textContent = printName;
                     sheetDiv.appendChild(printCard);
                 }
-
                 printTarget.appendChild(sheetDiv);
             }
         }
@@ -245,15 +304,12 @@ CHRISTOPHER</textarea>
                 alert('Silakan masukkan nama karyawan terlebih dahulu.');
                 return;
             }
-
             if (typeof html2pdf === 'undefined') {
                 alert('Komponen PDF sedang memuat. Mohon tunggu sesaat.');
                 return;
             }
 
             var printTarget = document.getElementById('printTarget');
-            
-            // Set margin dokumen ke 0 karena pembagian grid lembaran A4 sudah dikunci di CSS (.pdf-sheet)
             var opt = {
                 margin:       0,
                 filename:     'Name_Tags_A4_Sempurna.pdf',
@@ -263,12 +319,17 @@ CHRISTOPHER</textarea>
                 pagebreak:    { mode: ['css'] }
             };
 
-            html2pdf().set(opt).from(printTarget).save().catch(function(err) {
+            // Jalankan fungsi record download jika sukses merender PDF
+            html2pdf().set(opt).from(printTarget).save().then(function() {
+                recordDownload();
+            }).catch(function(err) {
                 alert('Gagal membuat file PDF: ' + err);
             });
         }
 
         window.onload = function() {
+            initAnalytics(); // Inisialisasi counter saat halaman dibuka
+            
             if (document.fonts) {
                 document.fonts.ready.then(function() {
                     updateNameTags();
