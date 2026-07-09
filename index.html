@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generator Name Tag Karyawan</title>
     
-    <!-- TAILWIND V3 (Ringan, Stabil, Lolos Brave Shields) -->
+    <!-- TAILWIND V3 -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Library PDF via jsDelivr CDN -->
@@ -39,29 +39,21 @@
             text-transform: uppercase;
         }
 
-        /* SUSUNAN HALAMAN CETAK PDF A4 YANG PRESIFIK & ANTI-TUMPAH (210mm x 297mm) */
+        /* HALAMAN A4 STANDAR UNTUK MESIN CETAK PDF */
         .pdf-page {
-            width: 210mm;
-            height: 297mm;
-            padding-left: 3mm;
-            padding-right: 3mm;
-            padding-top: 8mm;
-            padding-bottom: 8mm;
-            display: grid;
-            grid-template-columns: repeat(4, 4.8cm);
-            grid-auto-rows: 1.6cm;
+            width: 190mm; /* Sesuai area cetak bersih A4 setelah dikurangi margin html2pdf (10mm kiri + 10mm kanan) */
+            display: flex;
+            flex-wrap: wrap;
             gap: 4mm;
             background: white;
             box-sizing: border-box;
-            page-break-after: always;
-            overflow: hidden;
         }
 
         /* Spesifikasi ukuran cetak fisik kartu agar pas 4.8cm x 1.6cm */
         .nametag-print {
             width: 4.8cm;
             height: 1.6cm;
-            border: 1px dashed #cbd5e1; /* Garis bantu potong tipis abu-abu */
+            border: 1px dashed #cbd5e1; /* Garis potong abu-abu tipis */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -71,6 +63,10 @@
             text-transform: uppercase;
             font-size: 18pt;
             color: #000000;
+            
+            /* ATURAN KRUSIAL: Mencegah elemen terpotong di tengah halaman */
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
     </style>
 </head>
@@ -144,9 +140,9 @@ EKO</textarea>
         </div>
     </div>
 
-    <!-- RENDER ENGINE WORKER CONTAINER (Visibel minimal 1px agar engine canvas bekerja sempurna tanpa terpotong) -->
-    <div style="position: absolute; top: 0; left: 0; width: 1px; height: 1px; overflow: hidden; opacity: 0.01; pointer-events: none;">
-        <div id="printTarget"></div>
+    <!-- RENDER ENGINE WORKER CONTAINER (Tersembunyi tapi terbaca sempurna oleh html2pdf tanpa terpotong) -->
+    <div style="position: absolute; top: -9999px; left: -9999px; width: 190mm;">
+        <div id="printTarget" class="pdf-page font-blueberry"></div>
     </div>
 
     <!-- JAVASCRIPT LOGIC -->
@@ -184,40 +180,25 @@ EKO</textarea>
                 return;
             }
 
-            // 1. BUAT KARTU UNTUK LIVE PREVIEW LAYAR MONITOR
+            // BUAT ELEMEN KARTU
             for (var j = 0; j < validNames.length; j++) {
                 var currentName = validNames[j];
+                
+                // 1. Render untuk Tampilan Preview Layar
                 var previewCard = document.createElement('div');
                 previewCard.className = 'nametag-preview font-blueberry text-slate-900 shadow-sm';
-                
                 if (currentName.length > 10) {
                     previewCard.className += ' border-red-500 bg-red-50';
                 }
-                
                 previewCard.style.fontSize = '18pt';
                 previewCard.textContent = currentName;
                 previewContainer.appendChild(previewCard);
-            }
 
-            // 2. SUSUN KARTU KEDALAM HALAMAN CETAK A4 (Maksimal 56 Name Tag per lembar halaman agar tidak tumpah)
-            var itemsPerPage = 56; 
-            var totalPages = Math.ceil(validNames.length / itemsPerPage);
-
-            for (var p = 0; p < totalPages; p++) {
-                var pageDiv = document.createElement('div');
-                pageDiv.className = 'pdf-page font-blueberry';
-                
-                var startIndex = p * itemsPerPage;
-                var endIndex = Math.min(startIndex + itemsPerPage, validNames.length);
-
-                for (var k = startIndex; k < endIndex; k++) {
-                    var printCard = document.createElement('div');
-                    printCard.className = 'nametag-print';
-                    printCard.textContent = validNames[k];
-                    pageDiv.appendChild(printCard);
-                }
-
-                printTarget.appendChild(pageDiv);
+                // 2. Render untuk Dokumen PDF Siap Cetak
+                var printCard = document.createElement('div');
+                printCard.className = 'nametag-print';
+                printCard.textContent = currentName;
+                printTarget.appendChild(printCard);
             }
         }
 
@@ -235,13 +216,14 @@ EKO</textarea>
 
             var printTarget = document.getElementById('printTarget');
             
-            // Konfigurasi margin [0,0,0,0] karena batas margin layout kertas sudah dikunci di CSS (.pdf-page)
+            // Konfigurasi html2pdf dengan smart page-break mode
             var opt = {
-                margin:       0,
-                filename:     'Name_Tags_Karyawan_A4.pdf',
+                margin:       [15, 10, 15, 10], // Atur margin dokumen PDF: atas 15mm, kiri 10mm, bawah 15mm, kanan 10mm
+                filename:     'Name_Tags_Karyawan_Fix.pdf',
                 image:        { type: 'jpeg', quality: 1.0 },
                 html2canvas:  { scale: 3, useCORS: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all', 'css'] } // Kunci utama agar kartu tidak dibelah secara horizontal oleh mesin pdf
             };
 
             html2pdf().set(opt).from(printTarget).save().catch(function(err) {
